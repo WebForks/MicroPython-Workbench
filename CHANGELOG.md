@@ -14,7 +14,7 @@
 ### Añadido
 - **Integración completa con el intérprete Python de VS Code**: La extensión ahora usa automáticamente el intérprete Python configurado en VS Code en lugar de comandos hardcoded como `python3`
 - **Soporte para entornos virtuales**: Compatibilidad completa con venv, conda, pyenv y otras configuraciones de Python
-- **Configuración específica de Python**: Nueva opción `mpyWorkbench.pythonPath` para sobrescribir el intérprete Python específicamente para esta extensión
+- **Configuración específica de Python**: Nueva opción `microPythonHelper.pythonPath` para sobrescribir el intérprete Python específicamente para esta extensión
 - **Sistema de fallback inteligente**: Detección automática de intérpretes Python con validación de dependencias (pyserial)
 - **Cache inteligente**: Optimización de rendimiento con cache de 30 segundos que se actualiza automáticamente cuando cambian las configuraciones
 

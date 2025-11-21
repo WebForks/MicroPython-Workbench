@@ -29,7 +29,7 @@ export class Esp32Tree implements vscode.TreeDataProvider<TreeNode> {
     if (element === "no-port") {
       const item = new vscode.TreeItem("", vscode.TreeItemCollapsibleState.None);
       item.command = {
-        command: "mpyWorkbench.pickPort",
+        command: "microPythonHelper.pickPort",
         title: "Select Port"
       };
       // Usar el estilo de welcome view para el botón
@@ -52,7 +52,7 @@ export class Esp32Tree implements vscode.TreeDataProvider<TreeNode> {
       ? { light: this.icon("folder.svg"), dark: this.icon("folder.svg") }
       : { light: this.icon("file.svg"), dark: this.icon("file.svg") };
     if (element.kind === "file") item.command = {
-      command: "mpyWorkbench.openFile",
+      command: "microPythonHelper.openFile",
       title: "Open",
       arguments: [element]
     };
@@ -115,11 +115,11 @@ export class Esp32Tree implements vscode.TreeDataProvider<TreeNode> {
 
   // Modifica getChildNodes para usar el cache si existe
   async getChildNodes(element?: Esp32Node): Promise<(Esp32Node | "no-port")[]> {
-    const port = vscode.workspace.getConfiguration().get<string>("mpyWorkbench.connect", "auto");
+    const port = vscode.workspace.getConfiguration().get<string>("microPythonHelper.connect", "auto");
     if (!port || port === "" || port === "auto") {
       return [];
     }
-    const rootPath = vscode.workspace.getConfiguration().get<string>("mpyWorkbench.rootPath", "/");
+    const rootPath = vscode.workspace.getConfiguration().get<string>("microPythonHelper.rootPath", "/");
     const path = element?.path ?? rootPath;
     // Permite forzar re-listado una vez (desde el botón Refresh)
     const forceList = this.rawListOnlyOnce;
@@ -130,8 +130,8 @@ export class Esp32Tree implements vscode.TreeDataProvider<TreeNode> {
     }
     try {
       let entries: { name: string; isDir: boolean }[] | undefined;
-      const usePyRaw = vscode.workspace.getConfiguration().get<boolean>("mpyWorkbench.usePyRawList", false);
-      entries = await vscode.commands.executeCommand<{ name: string; isDir: boolean }[]>("mpyWorkbench.autoSuspendLs", path);
+      const usePyRaw = vscode.workspace.getConfiguration().get<boolean>("microPythonHelper.usePyRawList", false);
+      entries = await vscode.commands.executeCommand<{ name: string; isDir: boolean }[]>("microPythonHelper.autoSuspendLs", path);
       if (!entries) {
         entries = usePyRaw ? await listDirPyRaw(path) : await mp.lsTyped(path);
       }
@@ -147,7 +147,7 @@ export class Esp32Tree implements vscode.TreeDataProvider<TreeNode> {
         const ws = vscode.workspace.workspaceFolders?.[0];
         if (ws) {
           const matcher = await createIgnoreMatcher(ws.uri.fsPath);
-          const rootPath = vscode.workspace.getConfiguration().get<string>("mpyWorkbench.rootPath", "/");
+          const rootPath = vscode.workspace.getConfiguration().get<string>("microPythonHelper.rootPath", "/");
           const filtered = nodes.filter(n => {
             const isDir = n.kind === 'dir';
             // Convert device path to local-relative path for matching
@@ -254,6 +254,6 @@ export class Esp32Tree implements vscode.TreeDataProvider<TreeNode> {
   }
   private extUri() {
     // Use the actual publisher.name from package.json
-    return vscode.extensions.getExtension("DanielBucam.mpy-workbench")!.extensionUri;
+    return vscode.extensions.getExtension("WebForks.MicroPython-Helper")!.extensionUri;
   }
 }

@@ -43,7 +43,7 @@ class SerialMonitor {
 
   private async tick(): Promise<void> {
     if (!this.running || this.busy) return;
-    const connect = vscode.workspace.getConfiguration().get<string>("mpyWorkbench.connect", "auto");
+    const connect = vscode.workspace.getConfiguration().get<string>("microPythonHelper.connect", "auto");
     const device = (connect || '').replace(/^serial:\/\//, "").replace(/^serial:\//, "");
     // Spawn a short-lived miniterm to read any pending output, then kill.
     const args = ["-m", "serial.tools.miniterm", device, "115200", "--eol", "LF"];

@@ -16,7 +16,7 @@ export async function disconnectReplTerminal() {
 export async function restartReplInExistingTerminal() {
   if (!replTerminal) return;
   try {
-    const connect = vscode.workspace.getConfiguration().get<string>("mpyWorkbench.connect", "auto");
+    const connect = vscode.workspace.getConfiguration().get<string>("microPythonHelper.connect", "auto");
     if (!connect || connect === "auto") return;
     const device = connect.replace(/^serial:\/\//, "").replace(/^serial:\//, "");
 
@@ -78,7 +78,7 @@ export async function softReset(): Promise<void> {
   }
 
   // Use mpremote connect with explicit port
-  const connect = vscode.workspace.getConfiguration().get<string>("mpyWorkbench.connect", "auto");
+  const connect = vscode.workspace.getConfiguration().get<string>("microPythonHelper.connect", "auto");
   const device = connect.replace(/^serial:\/\//, "").replace(/^serial:\//, "");
   const cmd = `mpremote connect ${device} reset`;
   await new Promise<void>((resolve) => {
@@ -98,7 +98,7 @@ export async function runActiveFile(): Promise<void> {
   if (!ed) { vscode.window.showErrorMessage("No active editor"); return; }
   await ed.document.save();
 
-  const connect = vscode.workspace.getConfiguration().get<string>("mpyWorkbench.connect", "auto");
+  const connect = vscode.workspace.getConfiguration().get<string>("microPythonHelper.connect", "auto");
   if (!connect || connect === "auto") {
     vscode.window.showErrorMessage("Select a specific serial port first (not 'auto').");
     return;
@@ -135,7 +135,7 @@ export async function getReplTerminal(context?: vscode.ExtensionContext): Promis
     replTerminal = undefined;
   }
 
-  const connect = vscode.workspace.getConfiguration().get<string>("mpyWorkbench.connect", "auto");
+  const connect = vscode.workspace.getConfiguration().get<string>("microPythonHelper.connect", "auto");
   if (!connect || connect === "auto") {
     throw new Error("Select a specific serial port first (not 'auto')");
   }
@@ -184,8 +184,8 @@ export async function closeReplTerminal() {
 export async function openReplTerminal() {
   // Strict handshake like Thonny: ensure device is interrupted and responsive before opening REPL
   const cfg = vscode.workspace.getConfiguration();
-  const interrupt = cfg.get<boolean>("mpyWorkbench.interruptOnConnect", true);
-  const strict = cfg.get<boolean>("mpyWorkbench.strictConnect", true);
+  const interrupt = cfg.get<boolean>("microPythonHelper.interruptOnConnect", true);
+  const strict = cfg.get<boolean>("microPythonHelper.strictConnect", true);
   let lastError: any = null;
   for (let attempt = 1; attempt <= 2; attempt++) {
     try {
@@ -256,7 +256,7 @@ export async function robustInterrupt(port?: string): Promise<void> {
   if (port) {
     devicePort = port;
   } else {
-    const connect = vscode.workspace.getConfiguration().get<string>("mpyWorkbench.connect", "auto");
+    const connect = vscode.workspace.getConfiguration().get<string>("microPythonHelper.connect", "auto");
     if (!connect || connect === "auto") {
       throw new Error("Select a specific serial port first (not 'auto').");
     }
@@ -316,7 +316,7 @@ export async function robustInterruptAndReset(port?: string): Promise<void> {
   if (port) {
     devicePort = port;
   } else {
-    const connect = vscode.workspace.getConfiguration().get<string>("mpyWorkbench.connect", "auto");
+    const connect = vscode.workspace.getConfiguration().get<string>("microPythonHelper.connect", "auto");
     if (!connect || connect === "auto") {
       throw new Error("Select a specific serial port first (not 'auto').");
     }

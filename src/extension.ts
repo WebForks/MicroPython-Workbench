@@ -139,7 +139,7 @@ export function activate(context: vscode.ExtensionContext) {
       '*.swp',
       '*.swo',
       '',
-      '# MPY Workbench',
+      '# MicroPython Helper',
       '.mpy-workbench/',
       '/.mpy-workbench',
       ''
@@ -171,25 +171,25 @@ export function activate(context: vscode.ExtensionContext) {
   async function workspaceAutoSyncEnabled(wsPath: string): Promise<boolean> {
     const cfg = await readWorkspaceConfig(wsPath);
     if (typeof cfg.autoSyncOnSave === 'boolean') return cfg.autoSyncOnSave;
-    return vscode.workspace.getConfiguration().get<boolean>('mpyWorkbench.autoSyncOnSave', false);
+    return vscode.workspace.getConfiguration().get<boolean>('microPythonHelper.autoSyncOnSave', false);
   }
 
   // Context key for welcome UI when no port is selected
   const updatePortContext = () => {
-    const v = vscode.workspace.getConfiguration().get<string>("mpyWorkbench.connect", "auto");
+    const v = vscode.workspace.getConfiguration().get<string>("microPythonHelper.connect", "auto");
     const has = !!v && v !== "auto";
-    vscode.commands.executeCommand('setContext', 'mpyWorkbench.hasPort', has);
+    vscode.commands.executeCommand('setContext', 'microPythonHelper.hasPort', has);
   };
   // Ensure no port is selected at startup
-  vscode.workspace.getConfiguration().update("mpyWorkbench.connect", "auto", vscode.ConfigurationTarget.Global);
+  vscode.workspace.getConfiguration().update("microPythonHelper.connect", "auto", vscode.ConfigurationTarget.Global);
   updatePortContext();
 
   const tree = new Esp32Tree();
-  const view = vscode.window.createTreeView("mpyWorkbenchFsView", { treeDataProvider: tree });
+  const view = vscode.window.createTreeView("microPythonHelperFsView", { treeDataProvider: tree });
   const actionsTree = new ActionsTree();
-  const actionsView = vscode.window.createTreeView("mpyWorkbenchActionsView", { treeDataProvider: actionsTree });
+  const actionsView = vscode.window.createTreeView("microPythonHelperActionsView", { treeDataProvider: actionsTree });
   const syncTree = new SyncTree();
-  const syncView = vscode.window.createTreeView("mpyWorkbenchSyncView", { treeDataProvider: syncTree });
+  const syncView = vscode.window.createTreeView("microPythonHelperSyncView", { treeDataProvider: syncTree });
   const decorations = new Esp32DecorationProvider();
   context.subscriptions.push(vscode.window.registerFileDecorationProvider(decorations));
   // Export decorations for use in other modules
@@ -201,13 +201,13 @@ export function activate(context: vscode.ExtensionContext) {
 
   // Status bar item to show workspace auto-sync state
   const autoSyncStatus = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
-  autoSyncStatus.command = 'mpyWorkbench.toggleWorkspaceAutoSync';
+  autoSyncStatus.command = 'microPythonHelper.toggleWorkspaceAutoSync';
   autoSyncStatus.tooltip = 'Toggle workspace Auto-Sync on Save';
   context.subscriptions.push(autoSyncStatus);
 
   // Status bar item for canceling all tasks
   const cancelTasksStatus = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 90);
-  cancelTasksStatus.command = 'mpyWorkbench.cancelAllTasks';
+  cancelTasksStatus.command = 'microPythonHelper.cancelAllTasks';
   cancelTasksStatus.tooltip = 'Cancel all running tasks';
   cancelTasksStatus.text = 'MPY: Cancel';
   cancelTasksStatus.color = new vscode.ThemeColor('statusBarItem.warningForeground');
@@ -263,12 +263,12 @@ export function activate(context: vscode.ExtensionContext) {
     // Optionally perform a quick check to nudge the connection.
     try { await mp.ls("/"); } catch {}
     if (listingInProgress) {
-      const d = vscode.workspace.getConfiguration().get<number>("mpyWorkbench.preListDelayMs", 150);
+      const d = vscode.workspace.getConfiguration().get<number>("microPythonHelper.preListDelayMs", 150);
       if (d > 0) await new Promise(r => setTimeout(r, d));
     }
   }
   async function withAutoSuspend<T>(fn: () => Promise<T>, opts: { preempt?: boolean } = {}): Promise<T> {
-    const enabled = vscode.workspace.getConfiguration().get<boolean>("mpyWorkbench.serialAutoSuspend", true);
+    const enabled = vscode.workspace.getConfiguration().get<boolean>("microPythonHelper.serialAutoSuspend", true);
     // Optionally preempt any in-flight mpremote process so new command takes priority
     if (opts.preempt !== false) {
       opQueue = Promise.resolve();
@@ -295,13 +295,13 @@ export function activate(context: vscode.ExtensionContext) {
     view,
     actionsView,
     syncView,
-    vscode.commands.registerCommand("mpyWorkbench.refresh", () => {
+    vscode.commands.registerCommand("microPythonHelper.refresh", () => {
       // Clear cache and force next listing to come from device
       tree.clearCache();
       tree.enableRawListForNext();
       tree.refreshTree();
     }),
-    vscode.commands.registerCommand("mpyWorkbench.refreshFileTreeCache", async () => {
+    vscode.commands.registerCommand("microPythonHelper.refreshFileTreeCache", async () => {
       try {
         console.log("[DEBUG] Starting manual file tree cache refresh...");
         await mp.refreshFileTreeCache();
@@ -312,7 +312,7 @@ export function activate(context: vscode.ExtensionContext) {
         vscode.window.showErrorMessage(`File tree cache refresh failed: ${error?.message || error}`);
       }
     }),
-    vscode.commands.registerCommand("mpyWorkbench.rebuildManifest", async () => {
+    vscode.commands.registerCommand("microPythonHelper.rebuildManifest", async () => {
       try {
         console.log("[DEBUG] Starting manual manifest rebuild...");
         const ws = vscode.workspace.workspaceFolders?.[0];
@@ -337,7 +337,7 @@ export function activate(context: vscode.ExtensionContext) {
         vscode.window.showErrorMessage(`Manifest rebuild failed: ${error?.message || error}`);
       }
     }),
-    vscode.commands.registerCommand("mpyWorkbench.debugTreeParsing", async () => {
+    vscode.commands.registerCommand("microPythonHelper.debugTreeParsing", async () => {
       try {
         console.log("[DEBUG] Starting tree parsing debug...");
         await debugTreeParsing();
@@ -348,7 +348,7 @@ export function activate(context: vscode.ExtensionContext) {
         vscode.window.showErrorMessage(`Tree parsing debug failed: ${error?.message || error}`);
       }
     }),
-    vscode.commands.registerCommand("mpyWorkbench.debugFilesystemStatus", async () => {
+    vscode.commands.registerCommand("microPythonHelper.debugFilesystemStatus", async () => {
       try {
         console.log("[DEBUG] Starting filesystem status debug...");
         await debugFilesystemStatus();
@@ -359,7 +359,7 @@ export function activate(context: vscode.ExtensionContext) {
         vscode.window.showErrorMessage(`Filesystem status debug failed: ${error?.message || error}`);
       }
     }),
-    vscode.commands.registerCommand("mpyWorkbench.cancelAllTasks", async () => {
+    vscode.commands.registerCommand("microPythonHelper.cancelAllTasks", async () => {
       try {
         console.log("[DEBUG] Canceling all tasks...");
 
@@ -376,7 +376,7 @@ export function activate(context: vscode.ExtensionContext) {
         vscode.window.showErrorMessage(`Failed to cancel tasks: ${error?.message || error}`);
       }
     }),
-    vscode.commands.registerCommand("mpyWorkbench.pickPort", async () => {
+    vscode.commands.registerCommand("microPythonHelper.pickPort", async () => {
       // Always get the most recent port list before showing the selector
       const devices = await mp.listSerialPorts();
       const items: vscode.QuickPickItem[] = [
@@ -386,24 +386,24 @@ export function activate(context: vscode.ExtensionContext) {
       const picked = await vscode.window.showQuickPick(items, { placeHolder: "Select Board serial port" });
       if (!picked) return;
       const value = picked.label === "auto" ? "auto" : picked.label;
-   await vscode.workspace.getConfiguration().update("mpyWorkbench.connect", value, vscode.ConfigurationTarget.Global);
+   await vscode.workspace.getConfiguration().update("microPythonHelper.connect", value, vscode.ConfigurationTarget.Global);
    updatePortContext();
    vscode.window.showInformationMessage(`Board connect set to ${value}`);
    tree.clearCache();
    tree.refreshTree();
    // (no prompt) just refresh the tree after selecting port
     }),
-    vscode.commands.registerCommand("mpyWorkbench.serialSendCtrlC", serialSendCtrlC),
-    vscode.commands.registerCommand("mpyWorkbench.stop", stop),
-    vscode.commands.registerCommand("mpyWorkbench.softReset", softReset),
+    vscode.commands.registerCommand("microPythonHelper.serialSendCtrlC", serialSendCtrlC),
+    vscode.commands.registerCommand("microPythonHelper.stop", stop),
+    vscode.commands.registerCommand("microPythonHelper.softReset", softReset),
 
-    vscode.commands.registerCommand("mpyWorkbench.newFileBoardAndLocal", async () => {
+    vscode.commands.registerCommand("microPythonHelper.newFileBoardAndLocal", async () => {
       const ws = vscode.workspace.workspaceFolders?.[0];
       if (!ws) {
         vscode.window.showErrorMessage("No workspace folder open");
         return;
       }
-      const rootPath = vscode.workspace.getConfiguration().get<string>("mpyWorkbench.rootPath", "/");
+      const rootPath = vscode.workspace.getConfiguration().get<string>("microPythonHelper.rootPath", "/");
       const filename = await vscode.window.showInputBox({
         prompt: "New file name (relative to project root)",
         placeHolder: "main.py, lib/utils.py, ..."
@@ -447,25 +447,25 @@ export function activate(context: vscode.ExtensionContext) {
       });
     }),
 
-    vscode.commands.registerCommand("mpyWorkbench.openFileFromLocal", async (node: Esp32Node) => {
+    vscode.commands.registerCommand("microPythonHelper.openFileFromLocal", async (node: Esp32Node) => {
       if (node.kind !== "file") return;
       try {
         const ws = getWorkspaceFolder();
-        const rootPath = vscode.workspace.getConfiguration().get<string>("mpyWorkbench.rootPath", "/");
+        const rootPath = vscode.workspace.getConfiguration().get<string>("microPythonHelper.rootPath", "/");
         const rel = toLocalRelative(node.path, rootPath);
         const abs = path.join(ws.uri.fsPath, ...rel.split("/"));
         await fs.access(abs);
         const doc = await vscode.workspace.openTextDocument(abs);
         await vscode.window.showTextDocument(doc, { preview: true });
       } catch (error) {
-        vscode.window.showErrorMessage(`File not found in local workspace: ${toLocalRelative(node.path, vscode.workspace.getConfiguration().get<string>("mpyWorkbench.rootPath", "/"))}`);
+        vscode.window.showErrorMessage(`File not found in local workspace: ${toLocalRelative(node.path, vscode.workspace.getConfiguration().get<string>("microPythonHelper.rootPath", "/"))}`);
       }
     }),
-    vscode.commands.registerCommand("mpyWorkbench.syncFileLocalToBoard", async (node: Esp32Node) => {
+    vscode.commands.registerCommand("microPythonHelper.syncFileLocalToBoard", async (node: Esp32Node) => {
       if (node.kind !== "file") return;
       const ws = vscode.workspace.workspaceFolders?.[0];
       if (!ws) { vscode.window.showErrorMessage("No workspace folder open"); return; }
-      const rootPath = vscode.workspace.getConfiguration().get<string>("mpyWorkbench.rootPath", "/");
+      const rootPath = vscode.workspace.getConfiguration().get<string>("microPythonHelper.rootPath", "/");
       const rel = toLocalRelative(node.path, rootPath);
       const abs = path.join(ws.uri.fsPath, ...rel.split("/"));
       try {
@@ -480,11 +480,11 @@ export function activate(context: vscode.ExtensionContext) {
       tree.addNode(node.path, false); // Add uploaded file to tree
       vscode.window.showInformationMessage(`Synced local → board: ${rel}`);
     }),
-    vscode.commands.registerCommand("mpyWorkbench.syncFileBoardToLocal", async (node: Esp32Node) => {
+    vscode.commands.registerCommand("microPythonHelper.syncFileBoardToLocal", async (node: Esp32Node) => {
       if (node.kind !== "file") return;
       const ws = vscode.workspace.workspaceFolders?.[0];
       if (!ws) { vscode.window.showErrorMessage("No workspace folder open"); return; }
-      const rootPath = vscode.workspace.getConfiguration().get<string>("mpyWorkbench.rootPath", "/");
+      const rootPath = vscode.workspace.getConfiguration().get<string>("microPythonHelper.rootPath", "/");
       const rel = toLocalRelative(node.path, rootPath);
       const abs = path.join(ws.uri.fsPath, ...rel.split("/"));
       await fs.mkdir(path.dirname(abs), { recursive: true });
@@ -496,8 +496,8 @@ export function activate(context: vscode.ExtensionContext) {
         await vscode.window.showTextDocument(doc, { preview: false });
       } catch {}
     }),
-    vscode.commands.registerCommand("mpyWorkbench.setPort", async (port: string) => {
-  await vscode.workspace.getConfiguration().update("mpyWorkbench.connect", port, vscode.ConfigurationTarget.Global);
+    vscode.commands.registerCommand("microPythonHelper.setPort", async (port: string) => {
+  await vscode.workspace.getConfiguration().update("microPythonHelper.connect", port, vscode.ConfigurationTarget.Global);
   updatePortContext();
   vscode.window.showInformationMessage(`ESP32 connect set to ${port}`);
   tree.clearCache();
@@ -505,7 +505,7 @@ export function activate(context: vscode.ExtensionContext) {
   // (no prompt) just refresh the tree after setting port
     }),
 
-    vscode.commands.registerCommand("mpyWorkbench.syncBaseline", async () => {
+    vscode.commands.registerCommand("microPythonHelper.syncBaseline", async () => {
       try {
         // Close the REPL terminal if open to avoid port conflicts
         if (isReplOpen()) {
@@ -531,7 +531,7 @@ export function activate(context: vscode.ExtensionContext) {
           vscode.window.showInformationMessage("Local folder initialized for synchronization.");
         }
 
-        const rootPath = vscode.workspace.getConfiguration().get<string>("mpyWorkbench.rootPath", "/");
+        const rootPath = vscode.workspace.getConfiguration().get<string>("microPythonHelper.rootPath", "/");
         const matcher2 = await createIgnoreMatcher(ws.uri.fsPath);
         const man = await buildManifest(ws.uri.fsPath, matcher2);
 
@@ -789,7 +789,7 @@ export function activate(context: vscode.ExtensionContext) {
       }
     }),
 
-    vscode.commands.registerCommand("mpyWorkbench.syncBaselineFromBoard", async () => {
+    vscode.commands.registerCommand("microPythonHelper.syncBaselineFromBoard", async () => {
       // Close the REPL terminal if open to avoid port conflicts
       if (isReplOpen()) {
         await disconnectReplTerminal();
@@ -797,7 +797,7 @@ export function activate(context: vscode.ExtensionContext) {
       }
       const ws = vscode.workspace.workspaceFolders?.[0];
       if (!ws) { vscode.window.showErrorMessage("No workspace folder open"); return; }
-      const rootPath = vscode.workspace.getConfiguration().get<string>("mpyWorkbench.rootPath", "/");
+      const rootPath = vscode.workspace.getConfiguration().get<string>("microPythonHelper.rootPath", "/");
       const deviceStats = await withAutoSuspend(() => mp.listTreeStats(rootPath));
       const matcher = await createIgnoreMatcher(ws.uri.fsPath);
       const toDownload = deviceStats
@@ -828,20 +828,20 @@ export function activate(context: vscode.ExtensionContext) {
 
 
 
-    vscode.commands.registerCommand("mpyWorkbench.openSerial", openReplTerminal),
-    vscode.commands.registerCommand("mpyWorkbench.openRepl", async () => {
+    vscode.commands.registerCommand("microPythonHelper.openSerial", openReplTerminal),
+    vscode.commands.registerCommand("microPythonHelper.openRepl", async () => {
       const term = await getReplTerminal(context);
       term.show(true);
     }),
-    vscode.commands.registerCommand("mpyWorkbench.stopSerial", async () => {
+    vscode.commands.registerCommand("microPythonHelper.stopSerial", async () => {
       await closeReplTerminal();
       vscode.window.showInformationMessage("Board: ESP32 REPL closed");
     }),
 
-    vscode.commands.registerCommand("mpyWorkbench.autoSuspendLs", async (pathArg: string) => {
+    vscode.commands.registerCommand("microPythonHelper.autoSuspendLs", async (pathArg: string) => {
       listingInProgress = true;
       try {
-        const usePyRaw = vscode.workspace.getConfiguration().get<boolean>("mpyWorkbench.usePyRawList", false);
+        const usePyRaw = vscode.workspace.getConfiguration().get<boolean>("microPythonHelper.usePyRawList", false);
         return await withAutoSuspend(() => (usePyRaw ? listDirPyRaw(pathArg) : mp.lsTyped(pathArg)), { preempt: false });
       } finally {
         listingInProgress = false;
@@ -849,10 +849,10 @@ export function activate(context: vscode.ExtensionContext) {
     }),
     // Keep welcome button visibility in sync if user changes settings directly
     vscode.workspace.onDidChangeConfiguration(e => {
-      if (e.affectsConfiguration('mpyWorkbench.connect')) updatePortContext();
+      if (e.affectsConfiguration('microPythonHelper.connect')) updatePortContext();
     }),
 
-    vscode.commands.registerCommand("mpyWorkbench.uploadActiveFile", async () => {
+    vscode.commands.registerCommand("microPythonHelper.uploadActiveFile", async () => {
       const ed = vscode.window.activeTextEditor;
       if (!ed) { vscode.window.showErrorMessage("No active editor"); return; }
       await ed.document.save();
@@ -880,9 +880,9 @@ export function activate(context: vscode.ExtensionContext) {
         vscode.window.showErrorMessage(`Failed to upload active file to board: ${uploadError?.message || uploadError}`);
       }
     }),
-    vscode.commands.registerCommand("mpyWorkbench.runActiveFile", runActiveFile),
-    vscode.commands.registerCommand("mpyWorkbench.checkDiffs", () => boardOperations.checkDiffs()),
-    vscode.commands.registerCommand("mpyWorkbench.syncDiffsLocalToBoard", async () => {
+    vscode.commands.registerCommand("microPythonHelper.runActiveFile", runActiveFile),
+    vscode.commands.registerCommand("microPythonHelper.checkDiffs", () => boardOperations.checkDiffs()),
+    vscode.commands.registerCommand("microPythonHelper.syncDiffsLocalToBoard", async () => {
       const ws = vscode.workspace.workspaceFolders?.[0];
       if (!ws) { vscode.window.showErrorMessage("No workspace folder open"); return; }
       const initialized = await isLocalSyncInitialized();
@@ -902,7 +902,7 @@ export function activate(context: vscode.ExtensionContext) {
         await saveManifest(manifestPath, initialManifest);
         vscode.window.showInformationMessage("Local folder initialized for synchronization.");
       }
-      const rootPath = vscode.workspace.getConfiguration().get<string>("mpyWorkbench.rootPath", "/");
+      const rootPath = vscode.workspace.getConfiguration().get<string>("microPythonHelper.rootPath", "/");
       // Get current diffs and filter to files by comparing with current device stats
       // Check if differences have been detected first
       const allDiffs = decorations.getDiffsFilesOnly();
@@ -913,7 +913,7 @@ export function activate(context: vscode.ExtensionContext) {
           "Check Differences Now"
         );
         if (runCheck === "Check Differences Now") {
-          await vscode.commands.executeCommand("mpyWorkbench.checkDiffs");
+          await vscode.commands.executeCommand("microPythonHelper.checkDiffs");
           // After checking diffs, try again - check both diffs and local-only files
           const newDiffs = decorations.getDiffsFilesOnly();
           const newLocalOnly = decorations.getLocalOnlyFilesOnly();
@@ -982,7 +982,7 @@ export function activate(context: vscode.ExtensionContext) {
         : `Board: ${diffCount} diffed files uploaded to board`;
       vscode.window.showInformationMessage(message + " and marks cleared");
     }),
-    vscode.commands.registerCommand("mpyWorkbench.syncDiffsBoardToLocal", async () => {
+    vscode.commands.registerCommand("microPythonHelper.syncDiffsBoardToLocal", async () => {
       const ws2 = vscode.workspace.workspaceFolders?.[0];
       if (!ws2) { vscode.window.showErrorMessage("No workspace folder open"); return; }
       
@@ -1004,7 +1004,7 @@ export function activate(context: vscode.ExtensionContext) {
         vscode.window.showInformationMessage("Local folder initialized for synchronization.");
       }
       
-      const rootPath2 = vscode.workspace.getConfiguration().get<string>("mpyWorkbench.rootPath", "/");
+      const rootPath2 = vscode.workspace.getConfiguration().get<string>("microPythonHelper.rootPath", "/");
       // Get current diffs and filter to files by comparing with current device stats
       const deviceStats2 = await withAutoSuspend(() => mp.listTreeStats(rootPath2));
       const filesSet2 = new Set(deviceStats2.filter(e => !e.isDir).map(e => e.path));
@@ -1019,7 +1019,7 @@ export function activate(context: vscode.ExtensionContext) {
             "Sync Local → Board"
           );
           if (syncLocalToBoard === "Sync Local → Board") {
-            await vscode.commands.executeCommand("mpyWorkbench.syncDiffsLocalToBoard");
+            await vscode.commands.executeCommand("microPythonHelper.syncDiffsLocalToBoard");
           }
         } else {
           const checkNow = await vscode.window.showWarningMessage(
@@ -1028,7 +1028,7 @@ export function activate(context: vscode.ExtensionContext) {
             "Check Differences Now"
           );
           if (checkNow === "Check Differences Now") {
-            await vscode.commands.executeCommand("mpyWorkbench.checkDiffs");
+            await vscode.commands.executeCommand("microPythonHelper.checkDiffs");
           }
         }
         return;
@@ -1056,10 +1056,10 @@ export function activate(context: vscode.ExtensionContext) {
   vscode.window.showInformationMessage("Board: Diffed files downloaded from board and marks cleared");
   tree.refreshTree();
     }),
-    vscode.commands.registerCommand("mpyWorkbench.openFile", async (node: Esp32Node) => {
+    vscode.commands.registerCommand("microPythonHelper.openFile", async (node: Esp32Node) => {
       if (node.kind !== "file") return;
       const ws = vscode.workspace.workspaceFolders?.[0];
-      const rootPath = vscode.workspace.getConfiguration().get<string>("mpyWorkbench.rootPath", "/");
+      const rootPath = vscode.workspace.getConfiguration().get<string>("microPythonHelper.rootPath", "/");
       if (ws) {
         const rel = toLocalRelative(node.path, rootPath);
         const abs = path.join(ws.uri.fsPath, ...rel.split("/"));
@@ -1090,7 +1090,7 @@ export function activate(context: vscode.ExtensionContext) {
         }
         const doc = await vscode.workspace.openTextDocument(vscode.Uri.file(abs));
         await vscode.window.showTextDocument(doc, { preview: false });
-        await context.workspaceState.update("mpyWorkbench.lastOpenedPath", abs);
+        await context.workspaceState.update("microPythonHelper.lastOpenedPath", abs);
       } else {
         // Fallback: no workspace, use temp
         const temp = vscode.Uri.joinPath(context.globalStorageUri, node.path.replace(/\//g, "_"));
@@ -1099,14 +1099,14 @@ export function activate(context: vscode.ExtensionContext) {
           await withAutoSuspend(() => mp.cpFromDevice(node.path, temp.fsPath));
           const doc = await vscode.workspace.openTextDocument(temp);
           await vscode.window.showTextDocument(doc, { preview: true });
-          await context.workspaceState.update("mpyWorkbench.lastOpenedPath", temp.fsPath);
+          await context.workspaceState.update("microPythonHelper.lastOpenedPath", temp.fsPath);
         } catch (copyError: any) {
           console.error(`[DEBUG] openFile (extension fallback): Failed to copy file to temp location:`, copyError);
           vscode.window.showErrorMessage(`Failed to copy file from board to temp location: ${copyError?.message || copyError}`);
         }
       }
     }),
-    vscode.commands.registerCommand("mpyWorkbench.mkdir", async (node?: Esp32Node) => {
+    vscode.commands.registerCommand("microPythonHelper.mkdir", async (node?: Esp32Node) => {
       const base = node?.kind === "dir" ? node.path : (node ? path.posix.dirname(node.path) : "/");
       const name = await vscode.window.showInputBox({ prompt: "New folder name", validateInput: v => v ? undefined : "Required" });
       if (!name) return;
@@ -1114,7 +1114,7 @@ export function activate(context: vscode.ExtensionContext) {
       await withAutoSuspend(() => mp.mkdir(target));
       tree.addNode(target, true);
     }),
-    vscode.commands.registerCommand("mpyWorkbench.delete", async (node: Esp32Node) => {
+    vscode.commands.registerCommand("microPythonHelper.delete", async (node: Esp32Node) => {
       const okBoard = await vscode.window.showWarningMessage(`Delete ${node.path} from board?`, { modal: true }, "Delete");
       if (okBoard !== "Delete") return;
       
@@ -1140,7 +1140,7 @@ export function activate(context: vscode.ExtensionContext) {
       });
       
     }),
-    vscode.commands.registerCommand("mpyWorkbench.deleteBoardAndLocal", async (node: Esp32Node) => {
+    vscode.commands.registerCommand("microPythonHelper.deleteBoardAndLocal", async (node: Esp32Node) => {
       const okBoardLocal = await vscode.window.showWarningMessage(`Delete ${node.path} from board AND local workspace?`, { modal: true }, "Delete");
       if (okBoardLocal !== "Delete") return;
       
@@ -1168,7 +1168,7 @@ export function activate(context: vscode.ExtensionContext) {
       
       const ws = vscode.workspace.workspaceFolders?.[0];
       if (ws) {
-        const rootPath = vscode.workspace.getConfiguration().get<string>("mpyWorkbench.rootPath", "/");
+        const rootPath = vscode.workspace.getConfiguration().get<string>("microPythonHelper.rootPath", "/");
         const rel = toLocalRelative(node.path, rootPath);
         const abs = path.join(ws.uri.fsPath, ...rel.split("/"));
         try {
@@ -1177,8 +1177,8 @@ export function activate(context: vscode.ExtensionContext) {
       }
       tree.removeNode(node.path);
     }),
-    vscode.commands.registerCommand("mpyWorkbench.deleteAllBoard", async () => {
-      const rootPath = vscode.workspace.getConfiguration().get<string>("mpyWorkbench.rootPath", "/");
+    vscode.commands.registerCommand("microPythonHelper.deleteAllBoard", async () => {
+      const rootPath = vscode.workspace.getConfiguration().get<string>("microPythonHelper.rootPath", "/");
       const warn = await vscode.window.showWarningMessage(
         `This will DELETE ALL files and folders under '${rootPath}' on the board. This cannot be undone.`,
         { modal: true },
@@ -1245,26 +1245,26 @@ export function activate(context: vscode.ExtensionContext) {
       // Update tree without relisting: leave root directory empty in cache
       tree.resetDir(rootPath);
     }),
-    vscode.commands.registerCommand("mpyWorkbench.deleteAllBoardFromView", async () => {
-      await vscode.commands.executeCommand("mpyWorkbench.deleteAllBoard");
+    vscode.commands.registerCommand("microPythonHelper.deleteAllBoardFromView", async () => {
+      await vscode.commands.executeCommand("microPythonHelper.deleteAllBoard");
     }),
     // View wrappers: run commands without pre-ops (no kill/Ctrl-C)
-    vscode.commands.registerCommand("mpyWorkbench.runFromView", async (cmd: string, ...args: any[]) => {
+    vscode.commands.registerCommand("microPythonHelper.runFromView", async (cmd: string, ...args: any[]) => {
       setSkipIdleOnce();
       try { await vscode.commands.executeCommand(cmd, ...args); } catch (e) {
         const msg = (e as any)?.message ?? String(e);
   vscode.window.showErrorMessage(`Board command failed: ${msg}`);
       }
     }),
-    vscode.commands.registerCommand("mpyWorkbench.syncBaselineFromView", async () => { setSkipIdleOnce(); await vscode.commands.executeCommand("mpyWorkbench.syncBaseline"); }),
-    vscode.commands.registerCommand("mpyWorkbench.syncBaselineFromBoardFromView", async () => { setSkipIdleOnce(); await vscode.commands.executeCommand("mpyWorkbench.syncBaselineFromBoard"); }),
+    vscode.commands.registerCommand("microPythonHelper.syncBaselineFromView", async () => { setSkipIdleOnce(); await vscode.commands.executeCommand("microPythonHelper.syncBaseline"); }),
+    vscode.commands.registerCommand("microPythonHelper.syncBaselineFromBoardFromView", async () => { setSkipIdleOnce(); await vscode.commands.executeCommand("microPythonHelper.syncBaselineFromBoard"); }),
 
-    vscode.commands.registerCommand("mpyWorkbench.checkDiffsFromView", async () => { setSkipIdleOnce(); await vscode.commands.executeCommand("mpyWorkbench.checkDiffs"); }),
-    vscode.commands.registerCommand("mpyWorkbench.syncDiffsLocalToBoardFromView", async () => { setSkipIdleOnce(); await vscode.commands.executeCommand("mpyWorkbench.syncDiffsLocalToBoard"); }),
-    vscode.commands.registerCommand("mpyWorkbench.syncDiffsBoardToLocalFromView", async () => { setSkipIdleOnce(); await vscode.commands.executeCommand("mpyWorkbench.syncDiffsBoardToLocal"); }),
-    vscode.commands.registerCommand("mpyWorkbench.runActiveFileFromView", async () => { setSkipIdleOnce(); await vscode.commands.executeCommand("mpyWorkbench.runActiveFile"); }),
-    vscode.commands.registerCommand("mpyWorkbench.openReplFromView", async () => { setSkipIdleOnce(); await vscode.commands.executeCommand("mpyWorkbench.openRepl"); }),
-    vscode.commands.registerCommand("mpyWorkbench.newFileInTree", async (node?: Esp32Node) => {
+    vscode.commands.registerCommand("microPythonHelper.checkDiffsFromView", async () => { setSkipIdleOnce(); await vscode.commands.executeCommand("microPythonHelper.checkDiffs"); }),
+    vscode.commands.registerCommand("microPythonHelper.syncDiffsLocalToBoardFromView", async () => { setSkipIdleOnce(); await vscode.commands.executeCommand("microPythonHelper.syncDiffsLocalToBoard"); }),
+    vscode.commands.registerCommand("microPythonHelper.syncDiffsBoardToLocalFromView", async () => { setSkipIdleOnce(); await vscode.commands.executeCommand("microPythonHelper.syncDiffsBoardToLocal"); }),
+    vscode.commands.registerCommand("microPythonHelper.runActiveFileFromView", async () => { setSkipIdleOnce(); await vscode.commands.executeCommand("microPythonHelper.runActiveFile"); }),
+    vscode.commands.registerCommand("microPythonHelper.openReplFromView", async () => { setSkipIdleOnce(); await vscode.commands.executeCommand("microPythonHelper.openRepl"); }),
+    vscode.commands.registerCommand("microPythonHelper.newFileInTree", async (node?: Esp32Node) => {
       const ws = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
       if (!ws) return;
       // Determine base path on device
@@ -1296,9 +1296,9 @@ export function activate(context: vscode.ExtensionContext) {
       } catch (err: any) {
         vscode.window.showErrorMessage(`Error creating file: ${err?.message ?? err}`);
       }
-      vscode.commands.executeCommand("mpyWorkbench.refresh");
+      vscode.commands.executeCommand("microPythonHelper.refresh");
     }),
-    vscode.commands.registerCommand("mpyWorkbench.newFolderInTree", async (node?: Esp32Node) => {
+    vscode.commands.registerCommand("microPythonHelper.newFolderInTree", async (node?: Esp32Node) => {
       const ws = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
       if (!ws) return;
       const baseDevice = node
@@ -1321,9 +1321,9 @@ export function activate(context: vscode.ExtensionContext) {
       } catch (err: any) {
         vscode.window.showErrorMessage(`Error creating folder: ${err?.message ?? err}`);
       }
-      vscode.commands.executeCommand("mpyWorkbench.refresh");
+      vscode.commands.executeCommand("microPythonHelper.refresh");
     }),
-    vscode.commands.registerCommand("mpyWorkbench.renameNode", async (node: Esp32Node) => {
+    vscode.commands.registerCommand("microPythonHelper.renameNode", async (node: Esp32Node) => {
       if (!node) return;
       const oldPath = node.path;
       const isDir = node.kind === "dir";
@@ -1358,12 +1358,12 @@ export function activate(context: vscode.ExtensionContext) {
       }
       vscode.window.showInformationMessage(`Renamed: ${oldPath} → ${newPath}`);
       // Refresh tree
-      const tree = vscode.extensions.getExtension("DanielBucam.mpy-workbench")?.exports?.esp32Tree as { refreshTree: () => void };
+      const tree = vscode.extensions.getExtension("WebForks.MicroPython-Helper")?.exports?.esp32Tree as { refreshTree: () => void };
       if (tree && typeof tree.refreshTree === "function") tree.refreshTree();
-      else vscode.commands.executeCommand("mpyWorkbench.refresh");
+      else vscode.commands.executeCommand("microPythonHelper.refresh");
     })
   );
-  // Auto-upload on save: if file is inside a workspace, push to device path mapped by mpyWorkbench.rootPath
+  // Auto-upload on save: if file is inside a workspace, push to device path mapped by microPythonHelper.rootPath
   context.subscriptions.push(
     vscode.workspace.onDidSaveTextDocument(async (doc) => {
       const ws = vscode.workspace.getWorkspaceFolder(doc.uri);
@@ -1382,7 +1382,7 @@ export function activate(context: vscode.ExtensionContext) {
         }
         return; // save locally only
       }
-      const rootPath = vscode.workspace.getConfiguration().get<string>("mpyWorkbench.rootPath", "/");
+      const rootPath = vscode.workspace.getConfiguration().get<string>("microPythonHelper.rootPath", "/");
       const rel = path.relative(ws.uri.fsPath, doc.uri.fsPath).replace(/\\/g, "/");
       try {
         const matcher = await createIgnoreMatcher(ws.uri.fsPath);
@@ -1408,7 +1408,7 @@ export function activate(context: vscode.ExtensionContext) {
     })
   );
   // Command to toggle workspace-level autosync setting
-  context.subscriptions.push(vscode.commands.registerCommand('mpyWorkbench.toggleWorkspaceAutoSync', async () => {
+  context.subscriptions.push(vscode.commands.registerCommand('microPythonHelper.toggleWorkspaceAutoSync', async () => {
     try {
       const ws = getWorkspaceFolder();
       const cfg = await readWorkspaceConfig(ws.uri.fsPath);
@@ -1427,7 +1427,7 @@ export function deactivate() {}
 
 // (no stray command registrations beyond this point)
 /*
-vscode.commands.registerCommand("mpyWorkbench.rename", async (node: Esp32Node) => {
+vscode.commands.registerCommand("microPythonHelper.rename", async (node: Esp32Node) => {
   if (!node) return;
   const oldPath = node.path;
   const isDir = node.kind === "dir";

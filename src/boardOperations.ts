@@ -108,7 +108,7 @@ function buildDefaultMpyIgnoreContent(): string {
     '*.swp',
     '*.swo',
     '',
-    '# MPY Workbench',
+    '# MicroPython Helper',
     '.mpy-workbench/',
     '/.mpy-workbench',
     ''
@@ -137,7 +137,7 @@ export class BoardOperations {
 
   // Helper function for auto-suspend operations
   private async withAutoSuspend<T>(fn: () => Promise<T>, opts: { preempt?: boolean } = {}): Promise<T> {
-    const enabled = vscode.workspace.getConfiguration().get<boolean>("mpyWorkbench.serialAutoSuspend", true);
+    const enabled = vscode.workspace.getConfiguration().get<boolean>("microPythonHelper.serialAutoSuspend", true);
     // If auto-suspend disabled, run without suspend logic
     if (!enabled) {
       try { return await fn(); }
@@ -150,7 +150,7 @@ export class BoardOperations {
 
   async syncBaseline(): Promise<void> {
     try {
-      const connect = vscode.workspace.getConfiguration().get<string>("mpyWorkbench.connect", "auto");
+      const connect = vscode.workspace.getConfiguration().get<string>("microPythonHelper.connect", "auto");
       const ws = vscode.workspace.workspaceFolders?.[0];
       if (!ws) { vscode.window.showErrorMessage("No workspace folder open"); return; }
       const initialized = await isLocalSyncInitialized();
@@ -170,7 +170,7 @@ export class BoardOperations {
         vscode.window.showInformationMessage("Local folder initialized for synchronization.");
       }
 
-      const rootPath = vscode.workspace.getConfiguration().get<string>("mpyWorkbench.rootPath", "/");
+      const rootPath = vscode.workspace.getConfiguration().get<string>("microPythonHelper.rootPath", "/");
       const matcher2 = await createIgnoreMatcher(ws.uri.fsPath);
       const man = await buildManifest(ws.uri.fsPath, matcher2);
 
@@ -431,7 +431,7 @@ export class BoardOperations {
   async syncBaselineFromBoard(): Promise<void> {
     const ws = vscode.workspace.workspaceFolders?.[0];
     if (!ws) { vscode.window.showErrorMessage("No workspace folder open"); return; }
-    const rootPath = vscode.workspace.getConfiguration().get<string>("mpyWorkbench.rootPath", "/");
+    const rootPath = vscode.workspace.getConfiguration().get<string>("microPythonHelper.rootPath", "/");
     const deviceStats = await this.withAutoSuspend(() => mp.listTreeStats(rootPath));
     const matcher = await createIgnoreMatcher(ws.uri.fsPath);
     const toDownload = deviceStats
@@ -601,7 +601,7 @@ export class BoardOperations {
         return;
       }
 
-      const rootPath = vscode.workspace.getConfiguration().get<string>("mpyWorkbench.rootPath", "/");
+      const rootPath = vscode.workspace.getConfiguration().get<string>("microPythonHelper.rootPath", "/");
       console.log(`[DEBUG] checkDiffs: rootPath: ${rootPath}`);
 
       // Check if workspace is initialized for sync
@@ -763,7 +763,7 @@ export class BoardOperations {
     });
 
     // Refresh tree to show decorations and clear cache for fresh device listing
-    await vscode.commands.executeCommand("mpyWorkbench.refresh");
+    await vscode.commands.executeCommand("microPythonHelper.refresh");
   }
 
   async syncDiffsLocalToBoard(noClear: boolean = false): Promise<void> {
@@ -786,7 +786,7 @@ export class BoardOperations {
       await saveManifest(manifestPath, initialManifest);
       vscode.window.showInformationMessage("Local folder initialized for synchronization.");
     }
-    const rootPath = vscode.workspace.getConfiguration().get<string>("mpyWorkbench.rootPath", "/");
+    const rootPath = vscode.workspace.getConfiguration().get<string>("microPythonHelper.rootPath", "/");
     // Get current diffs and filter to files by comparing with current device stats
     // Check if differences have been detected first
     const allDiffs = this.decorations.getDiffsFilesOnly();
@@ -903,7 +903,7 @@ export class BoardOperations {
       vscode.window.showInformationMessage("Local folder initialized for synchronization.");
     }
 
-    const rootPath = vscode.workspace.getConfiguration().get<string>("mpyWorkbench.rootPath", "/");
+    const rootPath = vscode.workspace.getConfiguration().get<string>("microPythonHelper.rootPath", "/");
     // Get current diffs and filter to files by comparing with current device stats
     const deviceStats = await this.withAutoSuspend(() => mp.listTreeStats(rootPath));
     const filesSet = new Set(deviceStats.filter(e => !e.isDir).map(e => e.path));
@@ -965,7 +965,7 @@ export class BoardOperations {
   async openFile(node: Esp32Node): Promise<void> {
     if (node.kind !== "file") return;
     const ws = vscode.workspace.workspaceFolders?.[0];
-    const rootPath = vscode.workspace.getConfiguration().get<string>("mpyWorkbench.rootPath", "/");
+    const rootPath = vscode.workspace.getConfiguration().get<string>("microPythonHelper.rootPath", "/");
     if (ws) {
       const rel = toLocalRelative(node.path, rootPath);
       const abs = path.join(ws.uri.fsPath, ...rel.split("/"));
@@ -1007,7 +1007,7 @@ export class BoardOperations {
 
         const doc = await vscode.workspace.openTextDocument(vscode.Uri.file(abs));
         await vscode.window.showTextDocument(doc, { preview: false });
-        await vscode.workspace.getConfiguration().update("mpyWorkbench.lastOpenedPath", abs);
+        await vscode.workspace.getConfiguration().update("microPythonHelper.lastOpenedPath", abs);
       } catch (openError: any) {
         console.error(`[DEBUG] openFile: Failed to open local file:`, openError);
         vscode.window.showErrorMessage(`Failed to open file: ${openError?.message || openError}`);
@@ -1020,7 +1020,7 @@ export class BoardOperations {
         await this.withAutoSuspend(() => mp.cpFromDevice(node.path, temp.fsPath));
         const doc = await vscode.workspace.openTextDocument(temp);
         await vscode.window.showTextDocument(doc, { preview: true });
-        await vscode.workspace.getConfiguration().update("mpyWorkbench.lastOpenedPath", temp.fsPath);
+        await vscode.workspace.getConfiguration().update("microPythonHelper.lastOpenedPath", temp.fsPath);
       } catch (copyError: any) {
         console.error(`[DEBUG] openFile: Failed to copy file to temp location:`, copyError);
         vscode.window.showErrorMessage(`Failed to copy file from board to temp location: ${copyError?.message || copyError}`);

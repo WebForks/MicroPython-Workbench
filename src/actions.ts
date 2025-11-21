@@ -25,7 +25,7 @@ export class ActionsTree implements vscode.TreeDataProvider<ActionNode> {
     const item = new vscode.TreeItem(element.label, vscode.TreeItemCollapsibleState.None);
     item.contextValue = "action";
     // Route via a wrapper so clicking in the view won't trigger kill/ctrl-c pre-ops
-    item.command = { command: "mpyWorkbench.runFromView", title: element.label, arguments: [element.command, ...(element.args ?? [])] };
+    item.command = { command: "microPythonHelper.runFromView", title: element.label, arguments: [element.command, ...(element.args ?? [])] };
     // Icons for actions
     if (element.id === "runActive") {
       item.iconPath = new vscode.ThemeIcon("play", new vscode.ThemeColor("charts.green"));
@@ -53,11 +53,11 @@ export class ActionsTree implements vscode.TreeDataProvider<ActionNode> {
 
   async getActionNodes(): Promise<ActionNode[]> {
     return [
-      { id: "runActive", label: "Run Active File", command: "mpyWorkbench.runActiveFile" },
-      { id: "openRepl", label: "Open Repl", command: "mpyWorkbench.openRepl" },
-      { id: "stop", label: "Stop", command: "mpyWorkbench.stop" },
-      { id: "softReset", label: "Soft Reset", command: "mpyWorkbench.softReset" },
-      { id: "sendCtrlC", label: "Interrupt", command: "mpyWorkbench.serialSendCtrlC" }
+      { id: "runActive", label: "Run Active File", command: "microPythonHelper.runActiveFile" },
+      { id: "openRepl", label: "Open Repl", command: "microPythonHelper.openRepl" },
+      { id: "stop", label: "Stop", command: "microPythonHelper.stop" },
+      { id: "softReset", label: "Soft Reset", command: "microPythonHelper.softReset" },
+      { id: "sendCtrlC", label: "Interrupt", command: "microPythonHelper.serialSendCtrlC" }
     ];
   }
 }

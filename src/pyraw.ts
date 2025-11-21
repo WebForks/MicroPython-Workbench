@@ -5,11 +5,11 @@ import { getPythonPath } from "./pythonInterpreter";
 
 export async function listDirPyRaw(dirPath: string): Promise<{ name: string; isDir: boolean }[]> {
   const cfg = vscode.workspace.getConfiguration();
-  const connect = cfg.get<string>("mpyWorkbench.connect", "auto") || "auto";
+  const connect = cfg.get<string>("microPythonHelper.connect", "auto") || "auto";
   if (!connect || connect === "auto") throw new Error("No fixed serial port selected");
   const device = connect.replace(/^serial:\/\//, "").replace(/^serial:\//, "");
   // Use the actual publisher.name from package.json
-  const script = path.join(vscode.extensions.getExtension("DanielBucam.mpy-workbench")!.extensionPath, "scripts", "thonny_list_files.py");
+  const script = path.join(vscode.extensions.getExtension("WebForks.MicroPython-Helper")!.extensionPath, "scripts", "thonny_list_files.py");
   
   // Get the configured Python interpreter
   const pythonPath = await getPythonPath();

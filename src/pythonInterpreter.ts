@@ -136,8 +136,8 @@ export class PythonInterpreterManager {
      * Get Python interpreter from VS Code configuration
      */
     private static getPythonFromConfiguration(workspaceFolder?: vscode.WorkspaceFolder): string | null {
-        // First check MPY Workbench specific override
-        const mpyConfig = vscode.workspace.getConfiguration('mpyWorkbench', workspaceFolder?.uri);
+        // First check MicroPython Helper specific override
+        const mpyConfig = vscode.workspace.getConfiguration('microPythonHelper', workspaceFolder?.uri);
         const mpyPythonPath = mpyConfig.get<string>('pythonPath');
         if (mpyPythonPath && mpyPythonPath.trim()) {
             return mpyPythonPath.trim();
@@ -246,7 +246,7 @@ export class PythonInterpreterManager {
             packageManager = 'pip (o usa apt: sudo apt install python3-mpremote)';
         }
 
-        const message = `MPY Workbench requires the 'mpremote' package to communicate with your MicroPython board.`;
+        const message = `MicroPython Helper requires the 'mpremote' package to communicate with your MicroPython board.`;
 
         vscode.window.showWarningMessage(message, 'Install mpremote', 'More information').then(selection => {
             if (selection === 'Install mpremote') {

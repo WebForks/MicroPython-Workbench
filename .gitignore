@@ -1,2 +1,9 @@
 .DS_Store
 *.py
+node_modules/
+dist/
+.mpy-workbench/
+*.vsix
+*.log
+.vscode/
+/node_modules

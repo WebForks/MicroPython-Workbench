@@ -49,7 +49,7 @@ The extension stores per-workspace settings and manifests inside a workspace fol
 - Workspace override file: `.mpy-workbench/config.json`
 - Sync manifest: `.mpy-workbench/esp32sync.json`
 
-Use the command `MPY Workbench: Toggle workspace Auto-Sync on Save` to enable or disable auto-sync for the current workspace. If no workspace config exists the extension falls back to the global setting `mpyWorkbench.autoSyncOnSave` (default: `false`).
+Use the command `MicroPython Helper: Toggle workspace Auto-Sync on Save` to enable or disable auto-sync for the current workspace. If no workspace config exists the extension falls back to the global setting `microPythonHelper.autoSyncOnSave` (default: `false`).
 
 ## Python Requirements
 
