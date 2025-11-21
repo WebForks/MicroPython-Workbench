@@ -297,6 +297,35 @@ export function activate(context: vscode.ExtensionContext) {
     });
     return opQueue as Promise<T>;
   }
+
+  // Update the Files view header with the detected board name/ID (when available)
+  async function refreshFilesViewTitle() {
+    // Reset title/description first so stale labels disappear if detection fails
+    view.title = "Files";
+    view.description = undefined;
+
+    const connect = vscode.workspace.getConfiguration().get<string>("microPythonWorkBench.connect", "auto");
+    if (!connect || connect === "auto") return;
+
+    try {
+      const info = await withAutoSuspend(() => mp.detectBoardInfo(), { preempt: false });
+      if (!info) return;
+      const parts: string[] = [];
+      if (info.machine) parts.push(info.machine);
+      else if (info.sysname) parts.push(info.sysname);
+      if (info.id) parts.push(info.id);
+      const label = parts.join(" • ");
+      if (label) {
+        view.title = `Files — ${label}`;
+        view.description = undefined;
+      }
+    } catch (error) {
+      console.error("[DEBUG] refreshFilesViewTitle: failed to detect board label", error);
+    }
+  }
+
+  // Try to show board name on startup if a fixed port is already selected
+  refreshFilesViewTitle().catch(() => {});
   context.subscriptions.push(
     view,
     actionsView,
@@ -394,6 +423,7 @@ export function activate(context: vscode.ExtensionContext) {
       const value = picked.label === "auto" ? "auto" : picked.label;
    await vscode.workspace.getConfiguration().update("microPythonWorkBench.connect", value, vscode.ConfigurationTarget.Global);
    updatePortContext();
+   await refreshFilesViewTitle();
    vscode.window.showInformationMessage(`Board connect set to ${value}`);
    tree.clearCache();
    tree.refreshTree();
@@ -505,6 +535,7 @@ export function activate(context: vscode.ExtensionContext) {
     vscode.commands.registerCommand("microPythonWorkBench.setPort", async (port: string) => {
   await vscode.workspace.getConfiguration().update("microPythonWorkBench.connect", port, vscode.ConfigurationTarget.Global);
   updatePortContext();
+  await refreshFilesViewTitle();
   vscode.window.showInformationMessage(`ESP32 connect set to ${port}`);
   tree.clearCache();
   tree.refreshTree();
@@ -855,7 +886,10 @@ export function activate(context: vscode.ExtensionContext) {
     }),
     // Keep welcome button visibility in sync if user changes settings directly
     vscode.workspace.onDidChangeConfiguration(e => {
-      if (e.affectsConfiguration('microPythonWorkBench.connect')) updatePortContext();
+      if (e.affectsConfiguration('microPythonWorkBench.connect')) {
+        updatePortContext();
+        refreshFilesViewTitle().catch(() => {});
+      }
     }),
 
     vscode.commands.registerCommand("microPythonWorkBench.uploadActiveFile", async () => {

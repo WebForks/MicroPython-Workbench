@@ -839,6 +839,34 @@ export async function lsTyped(p: string): Promise<{ name: string; isDir: boolean
   }
 }
 
+export type BoardDetectInfo = {
+  machine?: string;
+  sysname?: string;
+  release?: string;
+  id?: string;
+};
+
+export async function detectBoardInfo(): Promise<BoardDetectInfo | null> {
+  const connect = normalizeConnect(vscode.workspace.getConfiguration().get<string>("microPythonWorkBench.connect", "auto") || "auto");
+  if (!connect || connect === "auto") return null;
+
+  // Collect uname + unique_id (when available) as JSON so it can be parsed reliably.
+  // Single-line, no double quotes/newlines so Windows/cmd keeps quoting intact.
+  const script = "import os,json,machine;info=os.uname();uid=machine.unique_id().hex() if hasattr(machine,'unique_id') else '';sysname=getattr(info,'sysname','');mach=getattr(info,'machine','');release=getattr(info,'release','');print(json.dumps({'machine':mach,'sysname':sysname,'release':release,'id':uid}))";
+
+  try {
+    const { stdout } = await runMpremote(["connect", connect, "exec", script]);
+    const lines = String(stdout || "").trim().split(/\r?\n/).filter(Boolean);
+    const jsonLine = [...lines].reverse().find(l => l.startsWith("{") && l.endsWith("}"));
+    if (!jsonLine) return null;
+    const parsed = JSON.parse(jsonLine) as BoardDetectInfo;
+    return parsed;
+  } catch (error) {
+    console.error("[DEBUG] detectBoardInfo: failed to detect board info", error);
+    return null;
+  }
+}
+
 export async function listSerialPorts(): Promise<{port: string, name: string}[]> {
   try {
     const { stdout } = await runMpremote(["connect", "list"]);
@@ -1733,4 +1761,3 @@ export function cleanupConnections(): void {
   connectionManager.stop();
   cancelAll();
 }
-
