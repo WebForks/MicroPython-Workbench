@@ -231,19 +231,25 @@ export function activate(context: vscode.ExtensionContext) {
     }
   }
 
+  // Keep the sync view toggle label and status bar in sync
+  async function refreshAutoSyncUi() {
+    await refreshAutoSyncStatus();
+    try { syncTree.refreshTree(); } catch {}
+  }
+
   // Watch for workspace config changes in .mpystudio/config.json to update the status
   if (vscode.workspace.workspaceFolders && vscode.workspace.workspaceFolders.length > 0) {
     const wsPath = vscode.workspace.workspaceFolders[0].uri.fsPath;
     const cfgGlob = new vscode.RelativePattern(wsPath, '.mpystudio/config.json');
     const watcher = vscode.workspace.createFileSystemWatcher(cfgGlob);
-    watcher.onDidChange(refreshAutoSyncStatus);
-    watcher.onDidCreate(refreshAutoSyncStatus);
-    watcher.onDidDelete(refreshAutoSyncStatus);
+    watcher.onDidChange(refreshAutoSyncUi);
+    watcher.onDidCreate(refreshAutoSyncUi);
+    watcher.onDidDelete(refreshAutoSyncUi);
     context.subscriptions.push(watcher);
   }
 
   // Initialize status bar on activation
-  refreshAutoSyncStatus();
+  refreshAutoSyncUi();
   cancelTasksStatus.show();
 
   // Ensure sensible ignore files exist or are upgraded from old stub
@@ -1416,7 +1422,7 @@ export function activate(context: vscode.ExtensionContext) {
       cfg.autoSyncOnSave = !current;
       await writeWorkspaceConfig(ws.uri.fsPath, cfg);
       vscode.window.showInformationMessage(`Workspace auto-sync on save is now ${cfg.autoSyncOnSave ? 'ENABLED' : 'DISABLED'}`);
-  try { await refreshAutoSyncStatus(); } catch {}
+      try { await refreshAutoSyncUi(); } catch {}
     } catch (e) {
       vscode.window.showErrorMessage('Failed to toggle workspace auto-sync: ' + String(e));
     }

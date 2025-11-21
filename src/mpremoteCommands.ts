@@ -251,6 +251,20 @@ export function toDevicePath(localRel: string, rootPath: string): string {
 }
 
 export async function robustInterrupt(port?: string): Promise<void> {
+  // If REPL terminal holds the port, send interrupt through it to avoid conflicts
+  if (isReplOpen()) {
+    try {
+      const term = await getReplTerminal();
+      term.sendText("\x03", false);
+      await new Promise(r => setTimeout(r, 60));
+      term.sendText("\x03", false);
+      vscode.window.showInformationMessage("Board: Interrupt sent via ESP32 REPL");
+      return;
+    } catch (error) {
+      console.log(`[DEBUG] robustInterrupt: REPL interrupt path failed, falling back: ${error}`);
+    }
+  }
+
   // Get port from parameter or config
   let devicePort: string;
   if (port) {
@@ -311,6 +325,22 @@ export async function robustInterrupt(port?: string): Promise<void> {
 }
 
 export async function robustInterruptAndReset(port?: string): Promise<void> {
+  // If REPL terminal holds the port, send commands through it to avoid conflicts
+  if (isReplOpen()) {
+    try {
+      const term = await getReplTerminal();
+      term.sendText("\x03", false);
+      await new Promise(r => setTimeout(r, 60));
+      term.sendText("\x03", false);
+      await new Promise(r => setTimeout(r, 80));
+      term.sendText("\x04", false);
+      vscode.window.showInformationMessage("Board: Interrupt and soft reset sent via ESP32 REPL");
+      return;
+    } catch (error) {
+      console.log(`[DEBUG] robustInterruptAndReset: REPL path failed, falling back: ${error}`);
+    }
+  }
+
   // Get port from parameter or config
   let devicePort: string;
   if (port) {
