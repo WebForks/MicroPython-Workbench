@@ -3,7 +3,7 @@
   "icon": "media/logo.png",
   "displayName": "MicroPython-WorkBench",
   "description": "Fork of MPY-WorkBench to fix bugs and issues.  Browse and manage MicroPython files on ESP32 and similar boards via mpremote.",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "publisher": "WebForks",
   "engines": {
     "vscode": "^1.84.0"
