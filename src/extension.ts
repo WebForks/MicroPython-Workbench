@@ -352,6 +352,35 @@ export function activate(context: vscode.ExtensionContext) {
   autoSyncStatus.tooltip = 'Toggle workspace Auto-Sync on Save';
   context.subscriptions.push(autoSyncStatus);
 
+  // Status bar item to show last auto-sync time
+  const autoSyncLastStatus = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 95);
+  autoSyncLastStatus.tooltip = 'Last successful auto-sync time';
+  context.subscriptions.push(autoSyncLastStatus);
+
+  // Output channel for auto-sync events
+  const autoSyncOutput = vscode.window.createOutputChannel("MicroPython AutoSync");
+  context.subscriptions.push(autoSyncOutput);
+
+  const formatTime = (d: Date) => d.toLocaleTimeString();
+  function updateLastAutoSyncStatus(ts?: Date, detail?: string, enabled?: boolean) {
+    if (enabled === false) {
+      autoSyncLastStatus.text = 'MPY: LastSync --';
+      autoSyncLastStatus.tooltip = 'Auto-sync is disabled';
+      autoSyncLastStatus.show();
+      return;
+    }
+    if (!ts) {
+      autoSyncLastStatus.text = 'MPY: LastSync --';
+      autoSyncLastStatus.tooltip = 'No auto-sync yet';
+      autoSyncLastStatus.show();
+      return;
+    }
+    const t = formatTime(ts);
+    autoSyncLastStatus.text = `MPY: LastSync ${t}`;
+    autoSyncLastStatus.tooltip = detail ? `Last auto-sync at ${t}\n${detail}` : `Last auto-sync at ${t}`;
+    autoSyncLastStatus.show();
+  }
+
   // Status bar item for canceling all tasks
   const cancelTasksStatus = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 90);
   cancelTasksStatus.command = 'microPythonWorkBench.cancelAllTasks';
@@ -366,15 +395,19 @@ export function activate(context: vscode.ExtensionContext) {
       if (!ws) {
         autoSyncStatus.text = 'MPY: no ws';
         autoSyncStatus.show();
+        updateLastAutoSyncStatus(undefined, undefined, true);
         return;
       }
       const enabled = await workspaceAutoSyncEnabled(ws.uri.fsPath);
       autoSyncStatus.text = enabled ? 'MPY: AutoSync ON' : 'MPY: AutoSync OFF';
       autoSyncStatus.color = enabled ? undefined : new vscode.ThemeColor('statusBarItem.warningForeground');
       autoSyncStatus.show();
+      if (enabled) updateLastAutoSyncStatus(undefined, undefined, true);
+      else updateLastAutoSyncStatus(undefined, undefined, false);
     } catch (e) {
       autoSyncStatus.text = 'MPY: ?';
       autoSyncStatus.show();
+      updateLastAutoSyncStatus(undefined, undefined, true);
     }
   }
 
@@ -1688,6 +1721,10 @@ export function activate(context: vscode.ExtensionContext) {
       try {
         await withAutoSuspend(() => mp.cpToDevice(doc.uri.fsPath, deviceDest));
         tree.addNode(deviceDest, false);
+        const ts = new Date();
+        const detail = `${rel} → ${deviceDest}`;
+        autoSyncOutput.appendLine(`[${ts.toISOString()}] Auto-sync OK: ${detail}`);
+        updateLastAutoSyncStatus(ts, detail, true);
       }
       catch (e) {
         console.error(`[DEBUG] Auto-upload failed for ${rel}:`, e);
