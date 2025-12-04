@@ -2,6 +2,7 @@ import { execFile, ChildProcess, exec } from "node:child_process";
 import * as vscode from "vscode";
 import * as path from "node:path";
 import * as fs from "node:fs";
+import * as fsPromises from "node:fs/promises";
 
 function normalizeConnect(c: string): string {
   if (c.startsWith("serial://")) return c.replace(/^serial:\/\//, "");
@@ -926,25 +927,47 @@ export async function cpFromDevice(devicePath: string, localPath: string): Promi
   // Get connection info for optimization
   const connection = connectionManager.getConnection(connect);
 
+  let info: { mode: number; size: number; isDir: boolean; isReadonly: boolean } | null = null;
+  let isDir = false;
+
   try {
+    info = await getFileInfo(devicePath);
+    isDir = info?.isDir ?? false;
+
+    // Ensure destination parent folder exists to avoid ENOENT on copy
+    try {
+      await fsPromises.mkdir(path.dirname(localPath), { recursive: true });
+    } catch {
+      // Ignore mkdir errors; mpremote will surface any real issues
+    }
+
     // Strip leading slash from device paths for mpremote compatibility
     // mpremote expects root-level files without leading slash (test_write.tmp vs /test_write.tmp)
     const deviceArg = devicePath && devicePath !== "/" ? devicePath.replace(/^\//, "") : "/";
     // For cp FROM device TO local, device path needs : prefix
     const devicePathWithPrefix = deviceArg === "/" ? ":" : `:${deviceArg}`;
-    const commandArgs = ["connect", connect, "fs", "cp", devicePathWithPrefix, localPath];
-    const command = `mpremote ${commandArgs.map(arg => `"${arg}"`).join(' ')}`;
+    // Build args and always try with -r; mpremote tolerates -r for files
+    const baseArgs = ["connect", connect, "fs", "cp", "-r", devicePathWithPrefix, localPath];
+    const command = `mpremote ${baseArgs.map(arg => `"${arg}"`).join(' ')}`;
 
     console.log(`[DEBUG] cpFromDevice: Executing command: ${command}`);
-    console.log(`[DEBUG] cpFromDevice: Device path: ${devicePath} -> ${deviceArg} -> ${devicePathWithPrefix}`);
-    await runMpremote(commandArgs, { retryOnFailure: true });
+    console.log(`[DEBUG] cpFromDevice: Device path: ${devicePath} -> ${deviceArg} -> ${devicePathWithPrefix} (isDir=${isDir})`);
+    try {
+      await runMpremote(baseArgs, { retryOnFailure: true });
+    } catch (err: any) {
+      const errMsg = String(err?.message || err);
+      console.log(`[DEBUG] cpFromDevice: first attempt failed (${errMsg}), retrying without -r`);
+      // Retry without -r just in case target is a file and mpremote rejects -r
+      const retryArgs = ["connect", connect, "fs", "cp", devicePathWithPrefix, localPath];
+      await runMpremote(retryArgs, { retryOnFailure: false });
+    }
 
     // Note: We don't clear cache here since we're only reading, not modifying
   } catch (error: any) {
     connectionManager.markUnhealthy(connect);
     // Include command and file paths in error message for better debugging
     const deviceArg = devicePath && devicePath !== "/" ? devicePath.replace(/^\//, "") : "/";
-    const command = `mpremote connect ${connect} fs cp "${deviceArg}" "${localPath}"`;
+    const command = `mpremote connect ${connect} fs cp ${info?.isDir ? "-r " : ""}"${deviceArg}" "${localPath}"`;
     const enhancedError = new Error(`Failed to copy from device: ${error?.message || error}\nCommand: ${command}\nOriginal device path: ${devicePath}\nNormalized device path: ${deviceArg}\nLocal path: ${localPath}`);
     throw enhancedError;
   }
@@ -1377,7 +1400,12 @@ export async function getFileInfo(p: string): Promise<{mode: number, size: numbe
   if (!connect || connect === "auto") throw new Error("Select a specific serial port first");
 
   try {
-    const pathArg = p && p !== "/" ? p : "/";
+    // mpremote fs stat accepts paths without colon; allow leading slash
+    const normalize = (raw: string) => {
+      const cleaned = (raw || "").replace(/^:+/, "").replace(/[\\]+/g, "/");
+      return cleaned.length === 0 ? "/" : cleaned;
+    };
+    const pathArg = p && p !== "/" ? normalize(p) : "/";
     const { stdout } = await runMpremote(["connect", connect, "fs", "stat", pathArg]);
 
     // Parse mpremote fs stat output
@@ -1745,9 +1773,26 @@ export async function mvOnDevice(src: string, dst: string): Promise<void> {
   if (!connect || connect === "auto") throw new Error("Select a specific serial port first");
 
   try {
-    const srcArg = src && src !== "/" ? `"${src}"` : "/";
-    const dstArg = dst && dst !== "/" ? `"${dst}"` : "/";
-    await runMpremote(["connect", connect, "fs", "mv", srcArg, dstArg]);
+    const normalizePath = (p: string) => {
+      const trimmed = (p || "").replace(/^[:/\\]+/, "").replace(/[\\/]+/g, "/");
+      if (!trimmed) throw new Error("Invalid path for mv");
+      return trimmed.startsWith("/") ? trimmed : `/${trimmed}`;
+    };
+    const srcPath = normalizePath(src);
+    const dstPath = normalizePath(dst);
+
+    console.log(`[DEBUG] mvOnDevice: rename requested ${src} -> ${dst} (normalized ${srcPath} -> ${dstPath})`);
+
+    // Perform rename directly on device via exec (avoids mpremote path quirks)
+    const esc = (s: string) => s.replace(/\\/g, "\\\\").replace(/'/g, "\\'");
+    const renamePy = `import os; os.rename('${esc(srcPath)}','${esc(dstPath)}')`;
+    console.log(`[DEBUG] mvOnDevice: executing rename via exec`);
+    await runMpremote(["connect", connect, "exec", renamePy], { retryOnFailure: false });
+
+    // Verify with a direct os.stat on the device
+    const verifyPy = `import os; os.stat('${esc(dstPath)}')`;
+    console.log(`[DEBUG] mvOnDevice: verifying via exec stat`);
+    await runMpremote(["connect", connect, "exec", verifyPy], { retryOnFailure: false });
     
     // Invalidate cache since filesystem changed
     clearFileTreeCache();
