@@ -62,11 +62,10 @@ Use the command `MicroPython WorkBench: Toggle workspace Auto-Sync on Save` to e
 
 ## Requirements
 
-- **Python 3 + mpremote** — Used for all board operations (`pip install mpremote`). The extension defaults to VS Code’s selected interpreter and falls back to `python`/`python3` if needed.
+- **Python 3.13.2**
+- **Mpremote v1.26.1**
 - **Firmware flashing:** `esptool` available in the same Python environment. Install with `pip install esptool`. The extension checks `python`, `py -3` (Windows), and `esptool.py`/`esptool` on PATH.
-- **Firmware downloads:** Network access to fetch firmware images referenced in `assets/firmwareCatalog.json` (currently seeded with ESP32-C6).
-
-The Python path used by the extension can be adjusted in the extension settings if a specific interpreter needs to be selected.
+- The Python path used by the extension can be adjusted in the extension settings if a specific interpreter needs to be selected.
 
 ## Firmware flashing
 
